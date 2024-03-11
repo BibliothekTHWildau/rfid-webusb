@@ -1,0 +1,21 @@
+{
+  "name": "rfid-webusb",
+  "version": "0.0.1",
+  "description": "Feig RFID Reader via WebUSB",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx http-server"
+  },
+  "keywords": [
+    "rfid",
+    "feig",
+    "usb",
+    "webusb"
+  ],
+  "author": "Jan Kissig",
+  "license": "ISC"
+}

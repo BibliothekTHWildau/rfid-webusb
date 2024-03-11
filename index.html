@@ -1,0 +1,131 @@
+<style>
+  #tags{
+    font-family: monospace;
+    width:50%;
+
+  }
+</style>
+<button id="usb">usb</button>
+<button id="inventory">inventory</button>
+<button id="rfoff">rfOff</button>
+<button id="getTags">getTags</button>
+
+<button id="close">close</button>
+
+<pre id="tags"></pre>
+
+<script async type="module">
+  import { USBReader } from './lib/usbReader.js';
+  import { config } from './config.js';
+
+  import ISO28560_3 from 'https://cdn.jsdelivr.net/gh/BibliothekTHWildau/ISO28560-3js/lib/ISO28560.js'
+
+
+
+  let myReader;
+
+  document.querySelector('#usb').addEventListener('click', requestDevices);
+
+  document.querySelector('#inventory').addEventListener('click', inventory);
+  document.querySelector('#rfoff').addEventListener('click', rfoff);
+  document.querySelector('#close').addEventListener('click', () => { myReader.disconnect() });
+
+  document.querySelector('#getTags').addEventListener('click', async () => {
+    let response = {}
+    document.querySelector('#tags').innerText = "";
+    try {
+      const inventory = await myReader.inventory();
+      for (let tag of inventory.tags) {
+
+        if (false) {
+          try {
+            let rmbRespnse = await myReader.readMultipleBlocks(tag.IDD, 0, msg.blocksToRead)
+            tag.data = rmbRespnse.data;
+            tag.model = new ISO28560_3(tag.data);
+          } catch (error) {
+            tag.error = error
+          }
+
+        } else {
+          try {
+            const completeTag = await myReader.readCompleteTag(tag.IDD);
+            tag = Object.assign(tag, completeTag.tag);
+            tag.model = new ISO28560_3(tag.data);
+            document.querySelector('#tags').innerText += JSON.stringify(tag.model,null,2);
+          }
+          catch (error) {
+            tag.error = error
+          }
+        }
+
+        // async tag object gets sent before whole getTags is completed
+        response.tag = tag;
+        
+      }
+      
+      console.log(response)
+      
+    } catch (error) {
+      console.log(error)
+    }
+
+  });
+
+  /**
+   * call inventory method of reader
+   * */
+  async function inventory() {
+    myReader.inventory();
+  }
+
+  /**
+  * call rfOff method of reader   
+  */
+  async function rfoff() {
+    myReader.rfOff();
+  }
+
+
+  /**
+   *  opens a popup with filtered usb devices to pair with
+   *  it is mandatory to select a web usb device with a user interaction
+   *  afterwards getDevices, which is called in listDevices(), will pair with this device without user interaction
+   */
+  async function requestDevices() {
+
+    try {
+      let device = await navigator.usb.requestDevice({ filters: config.reader.filters });
+      console.log(device)
+    } catch (error) {
+      // Ignore "no device selected" error.
+      console.log("error", error);
+    }
+  }
+
+  /**
+   * 
+  */
+  async function listDevices() {
+    navigator.usb.getDevices({ filters: config.reader.filters }).then((devices) => {
+      console.log(`Total devices: ${devices.length}`);
+      devices.forEach((device) => {
+
+        console.log(
+          `Product name: ${device.productName}, serial number ${device.serialNumber}`,
+        );
+
+        console.log(device)
+
+        if (device.productName == "OBID RFID-Reader") {
+          myReader = new USBReader(device);
+        }
+      });
+    });
+  }
+
+  listDevices();
+
+  function onError() {
+
+  }
+</script>
